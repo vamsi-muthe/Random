@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Maintenance & Operations</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7;padding:40px 20px}.container{max-width:1000px;margin:0 auto}h1{color:#58a6ff;font-size:24px;margin-bottom:4px}h2{color:#58a6ff;font-size:18px;margin:28px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}.nav{margin-bottom:24px;font-size:13px;display:flex;justify-content:space-between}.nav a{color:#58a6ff;text-decoration:none}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #30363d}td{padding:8px 12px;border-bottom:1px solid #21262d}.cost-kb{color:#f85149}.cost-ag{color:#3fb950}.context{background:#161b22;border-left:3px solid #58a6ff;padding:12px 16px;margin:16px 0;font-size:13px;color:#8b949e}.warning{background:#2d1117;border:1px solid #da3633;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;color:#f85149}.ref{font-size:11px;color:#484f58;margin-top:32px;border-top:1px solid #21262d;padding-top:12px}</style>
+</head><body><div class="container">
+<div class="nav"><a href="05-quality-matrix.html">< Prev</a><a href="index.html">Index</a><a href="07-industry-gaps.html">Next ></a></div>
+<h1>6. Maintenance & Operational Burden</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:16px">With a 2-person part-time team, maintenance burden is a hard constraint, not a soft preference. KB requires 16-24 hrs/month; Agentic requires 2-8 hrs/month.</p>
+
+<div class="context"><strong>Why this matters:</strong> Our team is 2 engineers working on this part-time. Every hour spent debugging OpenSearch cluster health or fixing ingestion pipelines is an hour NOT spent improving the pipeline's actual security analysis quality. The maintenance cost isn't just dollars - it's opportunity cost against a constrained team.</div>
+
+<h2>6.1 KB Maintenance Activities</h2>
+<table>
+<tr><th>Activity</th><th>Frequency</th><th>Hours</th><th>What Happens If Neglected</th></tr>
+<tr><td>Chunking strategy review</td><td>Quarterly + after model changes</td><td>8-16 hrs/adjustment</td><td>Degraded recall - functions split mid-body</td></tr>
+<tr><td>Metadata schema drift</td><td>As repos restructure</td><td>4 hrs/update</td><td>Filters miss new repos or return wrong results</td></tr>
+<tr><td>OpenSearch cluster health</td><td>Weekly monitoring</td><td>2 hrs/week</td><td>Service outage - pipeline blocked</td></tr>
+<tr><td>Ingestion pipeline failures</td><td>Reactive (alerts)</td><td>2-8 hrs/incident</td><td>Stale data served silently</td></tr>
+<tr><td>Re-indexing after model changes</td><td>Per AWS model update</td><td>4-8 hrs + compute</td><td>Embedding space drift</td></tr>
+<tr><td>Sync pipeline (new repos)</td><td>Monthly</td><td>4 hrs</td><td>New repos invisible to search</td></tr>
+<tr><td><strong>TOTAL</strong></td><td></td><td class="cost-kb"><strong>16-24 hrs/month</strong></td><td></td></tr>
+</table>
+
+<h2>6.2 Agentic Maintenance Activities</h2>
+<table>
+<tr><th>Activity</th><th>Frequency</th><th>Hours</th><th>What Happens If Neglected</th></tr>
+<tr><td>Tool definitions</td><td>Quarterly</td><td>2 hrs</td><td>Tools drift from available APIs</td></tr>
+<tr><td>Prompt engineering</td><td>After model version changes</td><td>4 hrs</td><td>Suboptimal search strategies</td></tr>
+<tr><td>Model upgrades</td><td>As new models release</td><td>1 hr (config change)</td><td>Missing improvements</td></tr>
+<tr><td>Rate limit management</td><td>Monthly review</td><td>1 hr</td><td>Throttled during burst</td></tr>
+<tr><td><strong>TOTAL</strong></td><td></td><td class="cost-ag"><strong>2-8 hrs/month</strong></td><td></td></tr>
+</table>
+
+<h2>6.3 Failure Mode Comparison</h2>
+<table>
+<tr><th>Failure</th><th>KB Blast Radius</th><th>Agentic Blast Radius</th></tr>
+<tr><td>Infrastructure down</td><td class="cost-kb">ALL reviews blocked until OpenSearch recovers</td><td class="cost-ag">Per-query retry; fallback model available</td></tr>
+<tr><td>Stale data</td><td class="cost-kb">SILENT - all reviews use outdated code, no alert</td><td class="cost-ag">Impossible - reads live files</td></tr>
+<tr><td>Model API error</td><td>N/A (no model in retrieval path)</td><td class="cost-ag">Single SIA fails; retries automatically</td></tr>
+<tr><td>Cost spike</td><td>Fixed (no spike possible)</td><td>Bounded per-SIA; visible in billing immediately</td></tr>
+<tr><td>Vendor deprecation</td><td class="cost-kb">Re-index ALL data (weeks of engineering)</td><td class="cost-ag">Change one config variable</td></tr>
+</table>
+
+<div class="warning"><strong>The silent stale data risk is the most dangerous KB failure mode.</strong> If the S3 sync Lambda breaks silently, the pipeline validates SIA claims against code that is days/weeks old. For security review, this is worse than returning no result - it returns a confident wrong answer.</div>
+
+<h2>6.4 Summary</h2>
+<table>
+<tr><th>Dimension</th><th>KB</th><th>Agentic</th><th>Winner</th></tr>
+<tr><td>Components to operate</td><td>OpenSearch, Lambda, S3, EventBridge, KB</td><td>None (stateless)</td><td class="cost-ag">Agentic</td></tr>
+<tr><td>Monitoring required</td><td>Cluster health, sync status, costs</td><td>Per-SIA token tracking only</td><td class="cost-ag">Agentic</td></tr>
+<tr><td>Adding a new repo</td><td>Update S3 sync + metadata + re-index</td><td>Zero work (agent searches live)</td><td class="cost-ag">Agentic</td></tr>
+<tr><td>Model upgrade path</td><td>Full re-index (embedding migration)</td><td>Change env var</td><td class="cost-ag">Agentic</td></tr>
+<tr><td>Failure blast radius</td><td>System-wide (all reviews affected)</td><td>Per-query (one SIA retry)</td><td class="cost-ag">Agentic</td></tr>
+<tr><td>Engineering hours/month</td><td class="cost-kb">16-24 hrs ($1,600-$2,400)</td><td class="cost-ag">2-8 hrs ($200-$800)</td><td class="cost-ag">Agentic</td></tr>
+</table>
+
+<div class="ref"><strong>References:</strong> Maintenance estimates from internal experience operating Bedrock KBs in security-tools-dev (658383024129). OpenSearch silent stale-data failure documented in Gemini Deep Research: "Unmonitored, this collection will continue to incur the $350 monthly baseline indefinitely." Agentic statelessness confirmed by AWS Prescriptive Guidance RAG Options doc.</div>
+</div></body></html>

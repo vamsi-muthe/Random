@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Risk & Sensitivity Analysis</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7;padding:40px 20px}.container{max-width:1000px;margin:0 auto}h1{color:#58a6ff;font-size:24px;margin-bottom:4px}h2{color:#58a6ff;font-size:18px;margin:28px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}.nav{margin-bottom:24px;font-size:13px;display:flex;justify-content:space-between}.nav a{color:#58a6ff;text-decoration:none}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #30363d}td{padding:8px 12px;border-bottom:1px solid #21262d}.cost-kb{color:#f85149}.cost-ag{color:#3fb950}.context{background:#161b22;border-left:3px solid #58a6ff;padding:12px 16px;margin:16px 0;font-size:13px;color:#8b949e}.highlight{background:#0d2818;border:1px solid #238636;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}.ref{font-size:11px;color:#484f58;margin-top:32px;border-top:1px solid #21262d;padding-top:12px}</style>
+</head><body><div class="container">
+<div class="nav"><a href="08-interactive-calculator.html">< Prev</a><a href="index.html">Index</a><span></span></div>
+<h1>9. Risk Assessment & Sensitivity Analysis</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:16px">What could make this decision wrong? What variables swing the outcome? How robust is the recommendation?</p>
+
+<div class="context"><strong>Why this matters:</strong> A cost analysis is only useful if you know which assumptions can break it. This section stress-tests the recommendation: what if token prices rise? What if we need real-time latency? What if volumes explode? The answer: the decision is robust across all realistic scenarios.</div>
+
+<h2>9.1 Sensitivity: Which Variables Matter Most?</h2>
+<table>
+<tr><th>Variable</th><th>Impact on KB</th><th>Impact on Agentic</th><th>Analysis</th></tr>
+<tr><td><strong>OpenSearch OCU price</strong></td><td class="cost-kb">CRITICAL (85% of cost)</td><td>None</td><td>$0.24/OCU-hr is fixed AWS pricing. No negotiation possible at this scale.</td></tr>
+<tr><td><strong>SIA volume</strong></td><td>Negligible (flat)</td><td class="cost-ag">LINEAR</td><td>At low volume, KB wastes money. At extreme volume (700+ SIAs/mo), KB amortizes.</td></tr>
+<tr><td><strong>Model token pricing</strong></td><td>None</td><td>MODERATE</td><td>Prices declining. Haiku 3.5 is already $0.43/SIA cached. Floor keeps dropping.</td></tr>
+<tr><td><strong>Entity count/SIA</strong></td><td>Negligible</td><td>MODERATE (linear)</td><td>20 entities = $3.20/SIA (Sonnet cached). Still far below KB amortized cost.</td></tr>
+<tr><td><strong>Repo count</strong></td><td>Minor (OCU step)</td><td>None</td><td>Agentic searches live. Adding repos = zero cost increase.</td></tr>
+<tr><td><strong>Maintenance rate</strong></td><td class="cost-kb">HIGH ($800-$2,400 swing)</td><td>Low</td><td>Even at $0 maintenance, KB loses on infra alone at M0-M2.</td></tr>
+<tr><td><strong>Latency SLA</strong></td><td>Favors KB if &lt;5s</td><td>Hurts if &lt;5s</td><td>Pipeline is async. Not projected to need &lt;5s. Weighted 10% in quality score.</td></tr>
+</table>
+
+<h2>9.2 Risk Assessment</h2>
+<table>
+<tr><th>Risk</th><th>KB Impact</th><th>Agentic Impact</th><th>Mitigation</th></tr>
+<tr><td>AWS price increase</td><td class="cost-kb">HIGH (fixed costs amplify)</td><td>LOW (per-query)</td><td>Agentic: switch models instantly</td></tr>
+<tr><td>Model quality regression</td><td>N/A</td><td>MEDIUM</td><td>Pin versions; A/B test before upgrading</td></tr>
+<tr><td>Service outage</td><td class="cost-kb">HIGH (pipeline blocked)</td><td>LOW (multi-region fallback)</td><td>Agentic: fallback to cheaper model</td></tr>
+<tr><td>Unexpected cost spike</td><td>LOW (fixed)</td><td>MEDIUM (burst)</td><td>Per-SIA budget cap; alert at threshold</td></tr>
+<tr><td>Stale data served</td><td class="cost-kb">MEDIUM (sync lag, silent)</td><td>NONE (live access)</td><td>KB: must monitor sync pipeline</td></tr>
+<tr><td>Vendor lock-in</td><td class="cost-kb">HIGH (OpenSearch + KB specific)</td><td>LOW (model-agnostic tools)</td><td>Agentic: swap provider with config change</td></tr>
+</table>
+
+<h2>9.3 What-If Scenarios</h2>
+
+<h3>What if token prices INCREASE 2x?</h3>
+<table>
+<tr><th>Model</th><th>Current/SIA</th><th>2x Price/SIA</th><th>Still cheaper than KB?</th></tr>
+<tr><td>Sonnet 4 (cached)</td><td>$1.60</td><td>$3.20</td><td class="cost-ag">Yes (KB = $38/SIA amortized at M2)</td></tr>
+<tr><td>Haiku 3.5 (cached)</td><td>$0.43</td><td>$0.86</td><td class="cost-ag">Yes (44x cheaper)</td></tr>
+</table>
+<p style="font-size:13px;margin-top:8px"><strong>Verdict:</strong> Even with 2x price increase, agentic remains 10x+ cheaper. The recommendation is stable.</p>
+
+<h3>What if we need &lt;5s retrieval latency?</h3>
+<p style="font-size:13px">This is the ONE scenario where KB wins. If a hard SLA of &lt;5s per retrieval is imposed, agentic's 2-3s per tool call x 7 calls = 14-21s per entity is too slow. Mitigations: pre-warm common patterns, aggressive result caching, or hybrid (KB for first pass, agentic for cross-file resolution). <strong>This SLA is not projected for an async review pipeline.</strong></p>
+
+<h3>What if volumes hit 500 SIAs/month?</h3>
+<table>
+<tr><th>Approach</th><th>500 SIAs/month cost</th><th>Winner</th></tr>
+<tr><td>KB</td><td>$2,300 (barely moves - still flat)</td><td></td></tr>
+<tr><td>Agentic Sonnet 4 (cached)</td><td>$800</td><td class="cost-ag">Agentic (2.9x cheaper)</td></tr>
+<tr><td>Agentic Haiku 3.5 (cached)</td><td>$215</td><td class="cost-ag">Agentic (10.7x cheaper)</td></tr>
+</table>
+<p style="font-size:13px;margin-top:8px">Even at 500 SIAs/month (5x beyond M3), agentic with caching is still cheaper.</p>
+
+<h2>9.4 Decision Robustness</h2>
+<div class="highlight">
+<strong>This decision is robust.</strong> Across all realistic stress tests:
+<ul style="padding-left:20px;margin-top:8px">
+<li>2x token price increase: Agentic still wins (10x+ cheaper)</li>
+<li>5x volume increase: Agentic still wins (3-10x cheaper)</li>
+<li>Zero maintenance for KB: Agentic still wins (infra alone is 5x more expensive)</li>
+<li>Only scenario where KB wins: hard &lt;5s latency SLA (not applicable)</li>
+</ul>
+<p style="margin-top:8px">The recommendation would only reverse at >1,200 SIAs/month WITH a &lt;5s latency requirement WITH prompt caching disabled. None of these conditions are projected.</p>
+</div>
+
+<div class="ref"><strong>References:</strong> Sensitivity calculations derived from the models in Sections 2-5. Risk assessment informed by operational experience with Bedrock KBs in security-tools-dev and Gemini Deep Research section on "Failure Modes and Blast Radius". Market pricing trend data from Anthropic/OpenAI/Google pricing history 2024-2026.</div>
+</div></body></html>

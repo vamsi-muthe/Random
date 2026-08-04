@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Quality Comparison Matrix</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7;padding:40px 20px}.container{max-width:1000px;margin:0 auto}h1{color:#58a6ff;font-size:24px;margin-bottom:4px}h2{color:#58a6ff;font-size:18px;margin:28px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}.nav{margin-bottom:24px;font-size:13px;display:flex;justify-content:space-between}.nav a{color:#58a6ff;text-decoration:none}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #30363d}td{padding:8px 12px;border-bottom:1px solid #21262d}.cost-kb{color:#f85149}.cost-ag{color:#3fb950}.context{background:#161b22;border-left:3px solid #58a6ff;padding:12px 16px;margin:16px 0;font-size:13px;color:#8b949e}.highlight{background:#0d2818;border:1px solid #238636;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}.warning{background:#2d1117;border:1px solid #da3633;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;color:#f85149}.ref{font-size:11px;color:#484f58;margin-top:32px;border-top:1px solid #21262d;padding-top:12px}</style>
+</head><body><div class="container">
+<div class="nav"><a href="04-comparison-tables.html">< Prev</a><a href="index.html">Index</a><a href="06-maintenance-ops.html">Next ></a></div>
+<h1>5. Quality Comparison Matrix</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:16px">Cost alone doesn't decide. If KB had 10x better quality, the $700/month might be justified. It doesn't - agentic scores higher on quality too.</p>
+
+<div class="context"><strong>Why this matters:</strong> The SIA pipeline validates security claims against infrastructure code. If retrieval misses the relevant Terraform resource or returns the wrong file, the final security assessment is based on incomplete evidence. Quality is not optional - a false "APPROVED" is a security incident. This section proves agentic search is not just cheaper but also more accurate for code-specific retrieval.</div>
+
+<h2>5.1 Dimension Scores (1-5)</h2>
+<table>
+<tr><th>Dimension</th><th>Weight</th><th>KB Score</th><th>Agentic Score</th><th>Why It Matters for SIA</th></tr>
+<tr><td><strong>Recall</strong></td><td>25%</td><td>3</td><td class="cost-ag">4</td><td>Must find ALL relevant Terraform resources to verify a claim. Missing one = false approval.</td></tr>
+<tr><td><strong>Precision</strong></td><td>20%</td><td class="cost-ag">4</td><td>3</td><td>Irrelevant chunks waste synthesis tokens and confuse the evaluating LLM.</td></tr>
+<tr><td><strong>Freshness</strong></td><td>20%</td><td>2</td><td class="cost-ag">5</td><td>SIAs are submitted for in-flight PRs. Stale retrieval validates against outdated code.</td></tr>
+<tr><td><strong>Context Coherence</strong></td><td>20%</td><td>2</td><td class="cost-ag">5</td><td>Verifying "DB is in private subnet" requires tracing VPC -> subnet -> RDS across 3+ files.</td></tr>
+<tr><td><strong>Latency</strong></td><td>10%</td><td class="cost-ag">5</td><td>2</td><td>Pipeline is async (202 + poll). Users accept minutes. Weighted low.</td></tr>
+<tr><td><strong>Determinism</strong></td><td>5%</td><td class="cost-ag">5</td><td>2</td><td>Reproducibility helps debugging but is not a correctness requirement.</td></tr>
+</table>
+
+<h2>5.2 Weighted Final Score</h2>
+<table>
+<tr><th>Approach</th><th>Calculation</th><th>Score</th></tr>
+<tr><td class="cost-kb">Knowledge Base</td><td>3x0.25 + 4x0.20 + 2x0.20 + 2x0.20 + 5x0.10 + 5x0.05</td><td><strong>3.10 / 5</strong></td></tr>
+<tr><td class="cost-ag">Agentic Search</td><td>4x0.25 + 3x0.20 + 5x0.20 + 5x0.20 + 2x0.10 + 2x0.05</td><td><strong>3.90 / 5</strong></td></tr>
+</table>
+
+<h2>5.3 Why KB Struggles with Code (Industry Consensus)</h2>
+<div class="warning"><strong>Fundamental limitation:</strong> All three major vendors (AWS, Microsoft, Google) now acknowledge that dense embeddings trained on natural language underperform on code. Code meaning derives from AST structure, import hierarchies, and type systems - not text similarity. (Ref: Azure AI Search Agentic Retrieval announcement, May 2026; AWS Bedrock Agentic Retrieval blog, July 2026)</div>
+
+<h3>KB Failure Modes on Code:</h3>
+<ul style="padding-left:20px;font-size:13px;margin:8px 0">
+<li><strong>Chunk boundary splits:</strong> A 300-token chunk cuts a function in half. The embedding captures half a function's semantics.</li>
+<li><strong>Cross-file blindness:</strong> "This module imports SecurityGroupRules from ../shared/" - KB cannot follow that import.</li>
+<li><strong>Identifier mismatch:</strong> Searching "IAM role for S3" semantically matches documentation ABOUT IAM, not the actual <code>aws_iam_role</code> resource block.</li>
+<li><strong>Hierarchy loss:</strong> A Terraform module's <code>variables.tf</code> defines the interface; <code>main.tf</code> implements it. KB returns one chunk from one file.</li>
+</ul>
+
+<h3>Why Agentic Excels on Code:</h3>
+<ul style="padding-left:20px;font-size:13px;margin:8px 0">
+<li><strong>Exact match search:</strong> <code>grep "aws_iam_role"</code> finds every IAM role resource regardless of semantic distance.</li>
+<li><strong>Cross-file tracing:</strong> Agent reads an import, follows it to the source file, reads that too. Builds coherent multi-file context.</li>
+<li><strong>AST-aware:</strong> Can search for specific resource types, function signatures, or variable references.</li>
+<li><strong>Self-correcting:</strong> If first search yields nothing, agent reformulates and tries again (multi-hop reasoning).</li>
+</ul>
+
+<h2>5.4 Real Example: SIA Claim Verification</h2>
+<pre>
+SIA Claim: "The Lambda function uses a CMK for environment variable encryption"
+
+KB approach:
+  - Embeds query -> finds chunks about Lambda encryption (docs, not code)
+  - Returns: general Lambda best-practices text, maybe a random main.tf chunk
+  - Synthesis LLM: "Cannot verify - no relevant code found" (false negative)
+
+Agentic approach:
+  - grep("aws_lambda_function", "terraform/") -> finds the resource
+  - read_file(resource block) -> sees kms_key_arn is empty
+  - grep("aws_kms_key", "terraform/") -> finds no KMS key resource
+  - Conclusion: "Claim CONTRADICTED - no KMS key provisioned" (correct finding)
+</pre>
+
+<div class="ref"><strong>References:</strong> Azure AI Search "Agentic Retrieval" announcement (May 2026) - "improves answer relevance to complex questions by up to 40%". AWS Bedrock Agentic Retrieval (July 2026) - "supports multi-hop reasoning, decomposes complex queries into sub-queries". Gemini Deep Research internal analysis - "Code meaning comes from AST structure, variable declarations, hierarchical scope, and logic flow".</div>
+</div></body></html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Comparison & Break-Even</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7;padding:40px 20px}.container{max-width:1000px;margin:0 auto}h1{color:#58a6ff;font-size:24px;margin-bottom:4px}h2{color:#58a6ff;font-size:18px;margin:28px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}.nav{margin-bottom:24px;font-size:13px;display:flex;justify-content:space-between}.nav a{color:#58a6ff;text-decoration:none}table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #30363d}td{padding:8px 12px;border-bottom:1px solid #21262d}.cost-kb{color:#f85149}.cost-ag{color:#3fb950}.context{background:#161b22;border-left:3px solid #58a6ff;padding:12px 16px;margin:16px 0;font-size:13px;color:#8b949e}.highlight{background:#0d2818;border:1px solid #238636;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px;overflow-x:auto;font-size:12px;margin:12px 0}.ref{font-size:11px;color:#484f58;margin-top:32px;border-top:1px solid #21262d;padding-top:12px}</style>
+</head><body><div class="container">
+<div class="nav"><a href="03-agentic-cost-model.html">< Prev</a><a href="index.html">Index</a><a href="05-quality-matrix.html">Next ></a></div>
+<h1>4. Side-by-Side Comparison & Break-Even Analysis</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:16px">The decisive comparison. At every projected volume, agentic search is 2.5-141x cheaper than KB.</p>
+
+<div class="context"><strong>Why this matters:</strong> This is the table you show a decision-maker. KB's cost is essentially flat ($1,900-$2,600/month regardless of usage). Agentic scales linearly from $0. The break-even point (where KB becomes cheaper) is 718+ SIAs/month - unreachable for this pipeline.</div>
+
+<h2>4.1 All Scenarios, All Approaches</h2>
+<table>
+<tr><th>Scenario</th><th class="cost-kb">KB Total</th><th class="cost-ag">Sonnet 4</th><th class="cost-ag">Sonnet 4 (cached)</th><th>Haiku 3.5</th><th>Gemini Flash</th><th>KB vs Sonnet (cached)</th></tr>
+<tr><td><strong>M0</strong> (5 SIAs, 15 repos)</td><td class="cost-kb">$1,902</td><td>$23.94</td><td class="cost-ag">$7.98</td><td>$1.28</td><td>$0.15</td><td><strong>238x more expensive</strong></td></tr>
+<tr><td><strong>M1</strong> (20 SIAs, 30 repos)</td><td class="cost-kb">$1,903</td><td>$95.76</td><td class="cost-ag">$31.92</td><td>$5.12</td><td>$0.60</td><td><strong>60x more expensive</strong></td></tr>
+<tr><td><strong>M2</strong> (50 SIAs, 80 repos)</td><td class="cost-kb">$2,083</td><td>$299.25</td><td class="cost-ag">$99.75</td><td>$16.00</td><td>$1.88</td><td><strong>21x more expensive</strong></td></tr>
+<tr><td><strong>M3</strong> (100 SIAs, 200 repos)</td><td class="cost-kb">$2,617</td><td>$598.50</td><td class="cost-ag">$199.50</td><td>$32.00</td><td>$3.75</td><td><strong>13x more expensive</strong></td></tr>
+<tr><td><strong>Burst</strong> (200 SIAs, 80 repos)</td><td class="cost-kb">$2,271</td><td>$1,596.00</td><td class="cost-ag">$532.00</td><td>$85.33</td><td>$10.00</td><td><strong>4.3x more expensive</strong></td></tr>
+</table>
+
+<h2>4.2 Break-Even Formula</h2>
+<pre>
+KB becomes cheaper when:
+  KB_fixed + KB_variable x N > Agentic_cost x N
+  N > KB_fixed / (Agentic_cost_per_SIA - KB_variable_per_SIA)
+
+KB_fixed = $1,902/month (OCU + maintenance)
+KB_variable = ~$0.05/SIA (negligible)
+</pre>
+
+<h2>4.3 Break-Even Points Per Model</h2>
+<table>
+<tr><th>Model</th><th>Cost/SIA (no cache)</th><th>Cost/SIA (cached)</th><th>Break-even (no cache)</th><th>Break-even (cached)</th><th>Feasible?</th></tr>
+<tr><td style="color:#58a6ff">Sonnet 4</td><td>$4.79</td><td>$1.60</td><td>402 SIAs/mo</td><td><strong>1,227 SIAs/mo</strong></td><td>Never (12x M3)</td></tr>
+<tr><td style="color:#d2a8ff">Opus 4</td><td>$23.94</td><td>$7.98</td><td>80 SIAs/mo</td><td>240 SIAs/mo</td><td>Marginal (no cache only)</td></tr>
+<tr><td style="color:#3fb950">Haiku 3.5</td><td>$1.28</td><td>$0.43</td><td>1,546 SIAs/mo</td><td><strong>5,005 SIAs/mo</strong></td><td>Never</td></tr>
+<tr><td style="color:#f0883e">GPT-4o</td><td>$3.78</td><td>$2.27</td><td>510 SIAs/mo</td><td>857 SIAs/mo</td><td>Never</td></tr>
+<tr><td style="color:#56d364">Gemini Flash</td><td>$0.15</td><td>$0.06</td><td>19,020 SIAs/mo</td><td>~100K SIAs/mo</td><td>Impossible</td></tr>
+</table>
+
+<div class="highlight"><strong>Bottom line:</strong> With prompt caching, even Sonnet 4 (our quality-preferred model) doesn't break even until 1,227 SIAs/month. That's 12x beyond our most aggressive projection (M3 = 100). KB is never cost-justified at any realistic volume.</div>
+
+<h2>4.4 12-Month TCO at M2 Scale</h2>
+<table>
+<tr><th>Approach</th><th>Monthly</th><th>12-Month TCO</th><th>3-Year TCO</th></tr>
+<tr><td class="cost-kb">Knowledge Base (full)</td><td>$2,083</td><td class="cost-kb">$24,996</td><td>$74,988</td></tr>
+<tr><td>Agentic (Sonnet 4, no cache)</td><td>$299</td><td>$3,593</td><td>$10,779</td></tr>
+<tr><td class="cost-ag">Agentic (Sonnet 4, cached)</td><td>$100</td><td class="cost-ag">$1,197</td><td>$3,591</td></tr>
+<tr><td>Agentic (Haiku 3.5, cached)</td><td>$16</td><td>$192</td><td>$576</td></tr>
+</table>
+
+<div class="ref"><strong>References:</strong> All costs derived from AWS Bedrock public pricing (us-east-1, Aug 2026). OpenSearch Serverless: $0.24/OCU-hr, 4 OCU minimum. Anthropic prompt caching: 0.10x read rate. Break-even formula accounts for KB variable cost of $0.05/SIA (embedding + rerank).</div>
+</div></body></html>

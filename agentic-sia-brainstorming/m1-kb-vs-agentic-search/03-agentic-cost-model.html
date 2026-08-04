@@ -1,0 +1,105 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Agentic Search Cost Model</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7;padding:40px 20px}
+.container{max-width:1000px;margin:0 auto}h1{color:#58a6ff;font-size:24px;margin-bottom:4px}h2{color:#58a6ff;font-size:18px;margin:28px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}h3{color:#8b949e;font-size:15px;margin:16px 0 8px}
+.nav{margin-bottom:24px;font-size:13px;display:flex;justify-content:space-between}.nav a{color:#58a6ff;text-decoration:none}.nav a:hover{text-decoration:underline}
+.context{background:#161b22;border-left:3px solid #58a6ff;padding:12px 16px;margin:16px 0;font-size:13px;color:#8b949e}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #30363d;font-weight:600}td{padding:8px 12px;border-bottom:1px solid #21262d}
+.cost-kb{color:#f85149}.cost-ag{color:#3fb950}.highlight{background:#0d2818;border:1px solid #238636;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+.warning{background:#2d1117;border:1px solid #da3633;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;color:#f85149}
+.info{background:#0d1c2e;border:1px solid #1f6feb;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;color:#79c0ff}
+pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px;overflow-x:auto;font-size:12px;margin:12px 0}
+.ref{font-size:11px;color:#484f58;margin-top:32px;border-top:1px solid #21262d;padding-top:12px}
+</style>
+</head><body><div class="container">
+<div class="nav"><a href="02-kb-cost-model.html">< Prev: KB Cost Model</a><a href="index.html">Index</a><a href="04-comparison-tables.html">Next: Comparison ></a></div>
+<h1>3. Agentic Search Cost Model</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:16px">How an LLM-driven tool-use agent searches code, and what it costs per SIA review across 7 foundation models.</p>
+
+<div class="context">
+<strong>Why this matters:</strong> Agentic search has ZERO fixed infrastructure cost. You pay only when a review runs. This section quantifies the per-query cost precisely so we can compare against KB's flat $700+/month floor. The key insight: even the most expensive model (Opus 4 at $13.50/SIA) is cheaper than KB at M0-M1 volumes because KB charges whether you use it or not.
+</div>
+
+<h2>3.1 How Agentic Code Search Works</h2>
+<p>The agent receives a query ("verify this SIA entity's claim about IAM roles"), decomposes it, and calls tools against live code:</p>
+<pre>
+Entity: "Database uses private subnet with no public IP"
+
+Agent reasoning loop:
+  Call 1: list_directory("terraform/modules/rds/")          -> sees main.tf, variables.tf
+  Call 2: grep("publicly_accessible", "terraform/")        -> finds terraform/modules/rds/main.tf:47
+  Call 3: read_file("terraform/modules/rds/main.tf", 40-60)-> reads the resource block
+  Call 4: grep("subnet", "terraform/modules/rds/")         -> finds subnet_group reference
+  Call 5: read_file("terraform/modules/vpc/subnets.tf")    -> confirms private subnet CIDR
+  Call 6: grep("igw\|nat", "terraform/modules/vpc/")       -> verifies no IGW route
+  Call 7: synthesize finding                               -> "Claim VERIFIED: RDS in private subnet"
+</pre>
+
+<div class="info"><strong>Calibration source:</strong> Tool-call estimates derived from real repos: <code>cloud-scripts</code> (506 files, 63K lines, avg 102 lines/sh), <code>agentic-sia</code> (141 files, 26K lines, avg 212 lines/py), <code>data-layer</code> (1544 files, 340K lines). Pattern: 1 discover + 1-2 search + 3-5 file reads + 1-2 import follows = 6-10 calls typical.</div>
+
+<h2>3.2 Token Math (Context Window Growth)</h2>
+<p>Each tool call returns results that accumulate in the context window. This is the primary cost driver.</p>
+<pre>
+Per Entity (7 tool calls, calibrated estimate):
+  Call 1:  2K input +  1K output =   3K tokens  (initial prompt + tool defs)
+  Call 2:  6K input +  1K output =   7K tokens  (prior result in context)
+  Call 3: 10K input +  1K output =  11K tokens
+  Call 4: 14K input +  1K output =  15K tokens
+  Call 5: 18K input +  1K output =  19K tokens
+  Call 6: 22K input +  1K output =  23K tokens
+  Call 7: 26K input +  1K output =  27K tokens
+  ──────────────────────────────────────────────
+  Total per entity: 98K input + 7K output = 105K tokens
+
+Per SIA (12 entities): 1,176K input + 84K output = 1,260K tokens
+Per SIA (15 entities): 1,470K input + 105K output = 1,575K tokens
+</pre>
+
+<h2>3.3 Prompt Caching Impact (90% Discount)</h2>
+<div class="highlight"><strong>Game-changer:</strong> Anthropic's prompt caching charges 0.10x (90% off) for cached prefix reads. The system prompt + tool definitions (~4K tokens) are identical across ALL 84 API calls in a single SIA. Cross-entity, prior results accumulate as a stable prefix. This cuts effective cost by 50-67%.</div>
+
+<table>
+<tr><th>Component</th><th>Tokens</th><th>Cached?</th><th>Effective Rate (Sonnet 4)</th></tr>
+<tr><td>System prompt + tool definitions</td><td>~4,000</td><td>Yes (after first call)</td><td>$3.00 x 0.10 = $0.30/1M</td></tr>
+<tr><td>Prior tool results (prefix-stable)</td><td>Grows per call</td><td>~85% hit rate</td><td>Blended ~$0.45/1M</td></tr>
+<tr><td>New content (current turn)</td><td>~4,000 per call</td><td>No</td><td>$3.00/1M (full price)</td></tr>
+<tr><td>Output tokens</td><td>~1,000 per call</td><td>N/A</td><td>$15.00/1M (always full)</td></tr>
+</table>
+
+<h2>3.4 Cost Per SIA By Model (Without Caching)</h2>
+<table>
+<tr><th>Model</th><th>Input $/1M</th><th>Output $/1M</th><th>12 entities</th><th>15 entities</th><th>20 entities</th></tr>
+<tr><td style="color:#58a6ff"><strong>Claude Sonnet 4</strong></td><td>$3.00</td><td>$15.00</td><td><strong>$4.79</strong></td><td>$5.99</td><td>$7.98</td></tr>
+<tr><td style="color:#d2a8ff">Claude Opus 4</td><td>$15.00</td><td>$75.00</td><td>$23.94</td><td>$29.93</td><td>$39.90</td></tr>
+<tr><td style="color:#3fb950">Claude Haiku 3.5</td><td>$0.80</td><td>$4.00</td><td><strong>$1.28</strong></td><td>$1.60</td><td>$2.13</td></tr>
+<tr><td style="color:#f0883e">GPT-4o</td><td>$2.50</td><td>$10.00</td><td>$3.78</td><td>$4.73</td><td>$6.30</td></tr>
+<tr><td style="color:#79c0ff">GPT-4o-mini</td><td>$0.15</td><td>$0.60</td><td>$0.23</td><td>$0.28</td><td>$0.38</td></tr>
+<tr><td style="color:#56d364">Gemini 2.0 Flash</td><td>$0.10</td><td>$0.40</td><td>$0.15</td><td>$0.19</td><td>$0.25</td></tr>
+<tr><td style="color:#db61a2">Gemini 2.5 Pro</td><td>$1.25</td><td>$10.00</td><td>$2.31</td><td>$2.89</td><td>$3.85</td></tr>
+</table>
+
+<h2>3.5 Cost Per SIA By Model (WITH Prompt Caching)</h2>
+<div class="info">Assumes 85% cache hit rate on accumulated prefix. Anthropic: 90% discount on hits. OpenAI: 50%. Google: 75%.</div>
+<table>
+<tr><th>Model</th><th>Cache Discount</th><th>12 entities (cached)</th><th>Savings vs uncached</th></tr>
+<tr><td style="color:#58a6ff"><strong>Claude Sonnet 4</strong></td><td>90%</td><td class="cost-ag"><strong>~$1.60</strong></td><td>67% cheaper</td></tr>
+<tr><td style="color:#d2a8ff">Claude Opus 4</td><td>90%</td><td>~$7.98</td><td>67% cheaper</td></tr>
+<tr><td style="color:#3fb950">Claude Haiku 3.5</td><td>90%</td><td class="cost-ag"><strong>~$0.43</strong></td><td>67% cheaper</td></tr>
+<tr><td style="color:#f0883e">GPT-4o</td><td>50%</td><td>~$2.27</td><td>40% cheaper</td></tr>
+<tr><td style="color:#79c0ff">GPT-4o-mini</td><td>50%</td><td>~$0.14</td><td>40% cheaper</td></tr>
+<tr><td style="color:#56d364">Gemini 2.0 Flash</td><td>75%</td><td>~$0.06</td><td>60% cheaper</td></tr>
+<tr><td style="color:#db61a2">Gemini 2.5 Pro</td><td>75%</td><td>~$1.04</td><td>55% cheaper</td></tr>
+</table>
+
+<h2>3.6 Monthly Cost By Scenario (Sonnet 4 + Caching)</h2>
+<table>
+<tr><th>Scenario</th><th>SIAs</th><th>Entities</th><th>Monthly (no cache)</th><th>Monthly (cached)</th></tr>
+<tr><td>M0</td><td>5</td><td>12</td><td>$23.94</td><td class="cost-ag"><strong>$7.98</strong></td></tr>
+<tr><td>M1</td><td>20</td><td>12</td><td>$95.76</td><td class="cost-ag"><strong>$31.92</strong></td></tr>
+<tr><td>M2</td><td>50</td><td>15</td><td>$299.25</td><td class="cost-ag"><strong>$99.75</strong></td></tr>
+<tr><td>M3</td><td>100</td><td>15</td><td>$598.50</td><td class="cost-ag"><strong>$199.50</strong></td></tr>
+<tr><td>Burst</td><td>200</td><td>20</td><td>$1,596.00</td><td class="cost-ag"><strong>$532.00</strong></td></tr>
+</table>
+
+<div class="ref"><strong>References:</strong> Anthropic Claude API Pricing (Aug 2026) | Anthropic Prompt Caching Documentation ("cache read tokens cost 10% of standard input tokens") | OpenAI Auto-Caching (50% discount) | Google Gemini Context Caching (75% discount, 1hr min TTL) | Token calibration: real repos measured at avg 150 lines/file = 600 tokens/file read</div>
+</div></body></html>

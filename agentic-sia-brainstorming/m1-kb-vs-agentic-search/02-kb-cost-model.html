@@ -1,0 +1,81 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>KB Cost Model - KB vs Agentic Search</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7;padding:40px 20px}
+.container{max-width:1000px;margin:0 auto}h1{color:#58a6ff;font-size:24px;margin-bottom:8px}h2{color:#58a6ff;font-size:18px;margin:28px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}h3{color:#8b949e;font-size:15px;margin:16px 0 8px}
+.nav{margin-bottom:24px;font-size:13px}.nav a{color:#58a6ff;text-decoration:none}.nav a:hover{text-decoration:underline}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #30363d;font-weight:600}td{padding:8px 12px;border-bottom:1px solid #21262d}
+.cost-kb{color:#f85149}.cost-ag{color:#3fb950}.highlight{background:#0d2818;border:1px solid #238636;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+.warning{background:#2d1117;border:1px solid #da3633;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;color:#f85149}
+pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px;overflow-x:auto;font-size:12px;margin:12px 0}
+.ref{font-size:11px;color:#484f58;margin-top:32px;border-top:1px solid #21262d;padding-top:12px}
+</style>
+</head><body><div class="container">
+<div class="nav"><a href="index.html">< Back to Index</a> | <a href="03-agentic-cost-model.html">Next: Agentic Cost Model ></a></div>
+<h1>2. Knowledge Base Cost Model</h1>
+
+<div class="warning"><strong>Key Insight:</strong> 85% of KB cost comes from the OpenSearch Serverless always-on floor ($700.80/month). Variable query costs are negligible (&lt;$10/month even at burst). You're paying for idle infrastructure.</div>
+
+<h2>2.1 Fixed Infrastructure (Always-On)</h2>
+<table>
+<tr><th>Component</th><th>Formula</th><th>Monthly Cost</th></tr>
+<tr><td><strong>OpenSearch Serverless (4 OCU min)</strong></td><td>4 OCU x $0.24/hr x 730 hrs</td><td class="cost-kb"><strong>$700.80</strong></td></tr>
+<tr><td>S3 Storage (15 repos)</td><td>15 x 50MB x $0.023/GB</td><td>$0.02</td></tr>
+<tr><td>S3 Storage (200 repos)</td><td>200 x 50MB x $0.023/GB</td><td>$0.23</td></tr>
+<tr><td>Lambda (sync automation)</td><td>Flat estimate</td><td>$5.00</td></tr>
+</table>
+
+<div class="warning"><strong>Operational trap:</strong> Deleting a Bedrock Knowledge Base via console does NOT terminate the underlying OpenSearch Serverless collection. It continues billing $350+/month silently until manually deleted. (Ref: AWS Bedrock Agentic Retrieval blog, July 2026)</div>
+
+<h2>2.2 OCU Scaling with Repos</h2>
+<table>
+<tr><th>Repos</th><th>Extra Indexing OCUs</th><th>Extra Search OCUs</th><th>Total OCUs</th><th>Monthly OCU Cost</th></tr>
+<tr><td>15-30</td><td>0</td><td>0</td><td>4</td><td>$700.80</td></tr>
+<tr><td>50</td><td>+1</td><td>0</td><td>5</td><td>$876.00</td></tr>
+<tr><td>80</td><td>+1</td><td>0</td><td>5</td><td>$876.00</td></tr>
+<tr><td>100</td><td>+2</td><td>0</td><td>6</td><td>$1,051.20</td></tr>
+<tr><td>200</td><td>+4</td><td>0</td><td>8</td><td>$1,401.60</td></tr>
+</table>
+
+<h2>2.3 Ingestion Costs (Titan Embeddings V2)</h2>
+<p>Pricing: <code>$0.00002 / 1K input tokens</code>. Chunks: 300 tokens each, 2,500 per repo.</p>
+<table>
+<tr><th>Repos</th><th>Total Chunks</th><th>Initial Index Cost</th><th>Daily Sync (10% churn)</th><th>Monthly Sync</th></tr>
+<tr><td>15</td><td>37,500</td><td>$0.23</td><td>$0.023</td><td>$0.68</td></tr>
+<tr><td>50</td><td>125,000</td><td>$0.75</td><td>$0.075</td><td>$2.25</td></tr>
+<tr><td>100</td><td>250,000</td><td>$1.50</td><td>$0.15</td><td>$4.50</td></tr>
+<tr><td>200</td><td>500,000</td><td>$3.00</td><td>$0.30</td><td>$9.00</td></tr>
+</table>
+<p><em>Embedding costs are trivially small. They do not move the needle at any scale.</em></p>
+
+<h2>2.4 Query Costs Per SIA</h2>
+<table>
+<tr><th>Component</th><th>Per Retrieve</th><th>12 entities (24 calls)</th><th>15 entities (30 calls)</th><th>20 entities (40 calls)</th></tr>
+<tr><td>Query embedding (Titan V2)</td><td>$0.000006</td><td>$0.000144</td><td>$0.00018</td><td>$0.00024</td></tr>
+<tr><td>Rerank (Cohere 3.5)</td><td>$0.002</td><td>$0.048</td><td>$0.060</td><td>$0.080</td></tr>
+<tr><td><strong>Total per SIA</strong></td><td>~$0.002</td><td><strong>$0.048</strong></td><td><strong>$0.060</strong></td><td><strong>$0.080</strong></td></tr>
+</table>
+
+<h2>2.5 Human Maintenance (The Hidden Cost)</h2>
+<table>
+<tr><th>Activity</th><th>Hours/Month</th><th>Cost @ $100/hr</th></tr>
+<tr><td>Chunking strategy review & tuning</td><td>4</td><td>$400</td></tr>
+<tr><td>OpenSearch cluster monitoring</td><td>2</td><td>$200</td></tr>
+<tr><td>Ingestion pipeline debugging</td><td>4</td><td>$400</td></tr>
+<tr><td>Metadata schema updates</td><td>2</td><td>$200</td></tr>
+<tr><td><strong>Total (midpoint estimate)</strong></td><td><strong>12</strong></td><td class="cost-kb"><strong>$1,200</strong></td></tr>
+</table>
+
+<h2>2.6 Total KB Cost Per Scenario</h2>
+<table>
+<tr><th>Scenario</th><th>OCU Cost</th><th>Embedding</th><th>Query Cost</th><th>Maintenance</th><th class="cost-kb">Total/Month</th></tr>
+<tr><td>M0 (15 repos, 5 SIAs)</td><td>$700.80</td><td>$0.68</td><td>$0.24</td><td>$1,200</td><td class="cost-kb"><strong>$1,902</strong></td></tr>
+<tr><td>M1 (30 repos, 20 SIAs)</td><td>$700.80</td><td>$1.35</td><td>$0.96</td><td>$1,200</td><td class="cost-kb"><strong>$1,903</strong></td></tr>
+<tr><td>M2 (80 repos, 50 SIAs)</td><td>$876.00</td><td>$3.60</td><td>$3.00</td><td>$1,200</td><td class="cost-kb"><strong>$2,083</strong></td></tr>
+<tr><td>M3 (200 repos, 100 SIAs)</td><td>$1,401.60</td><td>$9.00</td><td>$6.00</td><td>$1,200</td><td class="cost-kb"><strong>$2,617</strong></td></tr>
+<tr><td>Burst (80 repos, 200 SIAs)</td><td>$1,051.20</td><td>$3.60</td><td>$16.00</td><td>$1,200</td><td class="cost-kb"><strong>$2,271</strong></td></tr>
+</table>
+
+<div class="highlight"><strong>Key insight:</strong> Fixed costs (OCU + maintenance) dominate. Variable query costs are negligible even at burst. The cost curve is essentially <em>flat</em> from M0 to Burst - you pay nearly the same whether you run 5 or 200 SIAs.</div>
+
+<div class="ref"><strong>References:</strong> AWS OpenSearch Serverless Pricing (us-east-1) | Amazon Bedrock Pricing - Titan Embeddings V2 | Cohere Rerank 3.5 via Bedrock | AWS Bedrock Managed Knowledge Base documentation | Gemini Deep Research analysis: "OpenSearch Serverless mandates a minimum compute allocation even at zero utilization"</div>
+</div></body></html>
