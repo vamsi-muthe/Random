@@ -49,4 +49,42 @@ KB_variable = ~$0.05/SIA (negligible)
 </table>
 
 <div class="ref"><strong>References:</strong> All costs derived from AWS Bedrock public pricing (us-east-1, Aug 2026). OpenSearch Serverless: $0.24/OCU-hr, 4 OCU minimum. Anthropic prompt caching: 0.10x read rate. Break-even formula accounts for KB variable cost of $0.05/SIA (embedding + rerank).</div>
-</div></body></html>
+</div>
+<div id="theme-toggle" style="position:fixed;top:12px;right:12px;z-index:999;display:flex;gap:4px;background:#161b22;border:1px solid #30363d;border-radius:20px;padding:4px;font-size:12px;cursor:pointer">
+<span id="t-dark" style="padding:4px 10px;border-radius:16px;background:#58a6ff;color:#0d1117">Dark</span>
+<span id="t-light" style="padding:4px 10px;border-radius:16px">Light</span>
+<span id="t-blue" style="padding:4px 10px;border-radius:16px">Blue</span>
+</div>
+<script>
+const themes = {
+  dark:  { bg:"#0d1117", card:"#161b22", border:"#30363d", text:"#c9d1d9", muted:"#8b949e", accent:"#58a6ff" },
+  light: { bg:"#ffffff", card:"#f6f8fa", border:"#d0d7de", text:"#1f2328", muted:"#656d76", accent:"#0969da" },
+  blue:  { bg:"#0a1628", card:"#0d2240", border:"#1c3a5e", text:"#d4e5f7", muted:"#8badc7", accent:"#4dabf7" }
+};
+function applyTheme(t) {
+  const c = themes[t];
+  const root = document.documentElement;
+  document.body.style.background = c.bg;
+  document.body.style.color = c.text;
+  document.querySelectorAll("h1,h2,h3").forEach(e => e.style.color = c.accent);
+  document.querySelectorAll("a").forEach(e => { if(!e.closest("#theme-toggle")) e.style.color = c.accent; });
+  document.querySelectorAll("table th").forEach(e => { e.style.background = c.card; e.style.color = c.muted; e.style.borderColor = c.border; });
+  document.querySelectorAll("table td").forEach(e => e.style.borderBottomColor = c.border);
+  document.querySelectorAll("pre,code").forEach(e => { e.style.background = c.card; e.style.borderColor = c.border; });
+  document.querySelectorAll(".card,.context,.highlight,.info,.warning,.note-box").forEach(e => { e.style.background = c.card; e.style.borderColor = c.border; });
+  document.querySelectorAll(".nav,.ref,.subtitle").forEach(e => e.style.color = c.muted);
+  document.querySelectorAll("input,select").forEach(e => { e.style.background = c.bg; e.style.borderColor = c.border; e.style.color = c.text; });
+  const toggle = document.getElementById("theme-toggle");
+  if(toggle) { toggle.style.background = c.card; toggle.style.borderColor = c.border; }
+  document.querySelectorAll("#t-dark,#t-light,#t-blue").forEach(e => { e.style.background = "transparent"; e.style.color = c.muted; });
+  const active = document.getElementById("t-" + t);
+  if(active) { active.style.background = c.accent; active.style.color = t === "light" ? "#fff" : "#0d1117"; }
+  localStorage.setItem("sia-theme", t);
+}
+document.getElementById("t-dark").onclick = () => applyTheme("dark");
+document.getElementById("t-light").onclick = () => applyTheme("light");
+document.getElementById("t-blue").onclick = () => applyTheme("blue");
+applyTheme(localStorage.getItem("sia-theme") || "dark");
+</script>
+
+</body></html>
