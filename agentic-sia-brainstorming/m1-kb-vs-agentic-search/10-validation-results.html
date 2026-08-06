@@ -1,0 +1,143 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Validation Results (Phase 3)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.7;padding:40px 20px}
+.container{max-width:1000px;margin:0 auto}h1{color:#58a6ff;font-size:24px;margin-bottom:4px}h2{color:#58a6ff;font-size:18px;margin:28px 0 10px;border-bottom:1px solid #30363d;padding-bottom:6px}h3{color:#8b949e;font-size:15px;margin:16px 0 8px}
+.nav{margin-bottom:24px;font-size:13px;display:flex;justify-content:space-between}.nav a{color:#58a6ff;text-decoration:none}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bottom:1px solid #30363d}td{padding:8px 12px;border-bottom:1px solid #21262d}
+.cost-kb{color:#f85149}.cost-ag{color:#3fb950}.warn{color:#d29922}
+.context{background:#161b22;border-left:3px solid #58a6ff;padding:12px 16px;margin:16px 0;font-size:13px;color:#8b949e}
+.highlight{background:#0d2818;border:1px solid #238636;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px}
+.warning{background:#2d1117;border:1px solid #da3633;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;color:#f85149}
+pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px;overflow-x:auto;font-size:12px;margin:12px 0}
+.ref{font-size:11px;color:#484f58;margin-top:32px;border-top:1px solid #21262d;padding-top:12px}
+</style></head><body><div class="container">
+<div class="nav"><a href="09-risk-sensitivity.html">&lt; Prev: Risk &amp; Sensitivity</a><a href="index.html">Index</a><span></span></div>
+<h1>10. Validation Results (Phase 3)</h1>
+<p style="color:#8b949e;font-size:13px;margin-bottom:16px">Measured on 2026-08-04. The decision no longer rests on inference.</p>
+
+<div class="context">
+<strong>Why this exists.</strong> Everything in pages 1-9 was modelled or inferred from
+vendor benchmarks. A reviewer correctly pushed back that the option being selected was
+the one option never evaluated on our corpus. This page is that evaluation.
+</div>
+
+<h2>Method</h2>
+<p style="font-size:13px">Same 18 SIAs and 84 entities as the Phase 1 test, same four validation layers (self-match exclusion, file-type filter, co-occurrence, LLM relevance judge). Only the retrieval mechanism changed: a Sonnet 4.6 agent with <code>grep</code>, <code>read_file</code> and <code>list_directory</code> scoped to each SIA's tier-0 repositories, temperature 0, prompt caching on, 7 turns.</p>
+<p style="font-size:13px">Harness: <code>scripts/agentic_eval.py</code>. Raw data: <code>results/results_test_h_agentic.json</code>.</p>
+
+<h2>Headline</h2>
+<div class="highlight"><strong>86.9% validated coverage against Option G's 73.8%</strong>, with noise falling from 47% to 16.3%. Clears the &ge;74% threshold the ADR had set for "proceed as planned".</div>
+
+<table>
+<tr><th>Metric</th><th>Option G</th><th>Option H agentic</th><th>Delta</th></tr>
+<tr><td>Validated coverage</td><td>73.8% (62/84)</td><td class="cost-ag"><strong>86.9% (73/84)</strong></td><td class="cost-ag">+13.1 pts</td></tr>
+<tr><td>Noise rate</td><td class="cost-kb">47%</td><td class="cost-ag"><strong>16.3% (90/552)</strong></td><td class="cost-ag">-30.7 pts</td></tr>
+<tr><td>Cost per SIA (15 entities)</td><td>$0.31</td><td>$1.50</td><td class="cost-kb">4.8x higher</td></tr>
+<tr><td>Monthly at M2</td><td class="cost-kb">$1,892</td><td class="cost-ag"><strong>$75</strong></td><td class="cost-ag">25x lower</td></tr>
+</table>
+<p style="font-size:13px">Per-SIA outcome: <strong>11 improved, 2 regressed, 5 unchanged.</strong></p>
+
+<h2>Measured token behaviour</h2>
+<p style="font-size:13px">Per entity, averaged over 84 entities:</p>
+<table>
+<tr><th>Counter</th><th>Value</th><th>vs model</th></tr>
+<tr><td>Uncached input</td><td>1,693</td><td>-</td></tr>
+<tr><td>Cache read</td><td>46,451</td><td>-</td></tr>
+<tr><td>Cache write</td><td>13,873</td><td>-</td></tr>
+<tr><td>Output</td><td>1,943</td><td>-</td></tr>
+<tr><td>Tool calls</td><td><strong>17.5</strong></td><td class="warn">model assumed 7 (2.5x low)</td></tr>
+<tr><td>Latency</td><td>33.0s</td><td>-</td></tr>
+<tr><td>Cost</td><td><strong>$0.1002</strong></td><td class="cost-ag">model said $0.203 (2x high)</td></tr>
+</table>
+<p style="font-size:13px"><strong>74.9% of all input was served from cache</strong> at 0.1x. More tool calls than modelled yet lower cost: the agent issues several calls per turn, so turn count - and therefore full-context re-sends - is lower than a strictly serial model assumes.</p>
+
+<h2>Three estimates measurement contradicted</h2>
+<table>
+<tr><th>Claim in pages 1-9</th><th>Measured</th></tr>
+<tr><td>$153/month at M2</td><td class="cost-ag">$75/month - model was 2x high</td></tr>
+<tr><td>7 tool calls per entity</td><td class="warn">17.5 - model was 2.5x low</td></tr>
+<tr><td>Agentic is "near-deterministic" (temp=0, fixed tools)</td><td class="cost-kb">False. Same SIA returned 0%, 0%, 50%, 50% across four runs</td></tr>
+</table>
+<p style="font-size:13px">Precision also came out the opposite way to the estimate. KB was scored 4/5 against agentic's 3/5 on the theory that reranked chunks are tighter than raw tool output. Measured noise was <strong>16.3% agentic against 47% for Option G</strong>.</p>
+
+<h2>Where it regressed</h2>
+<table>
+<tr><th>SIA</th><th>Option G</th><th>Agentic</th><th>Cause</th></tr>
+<tr><td><code>broaden_per_tenant_key</code></td><td>100%</td><td class="cost-kb">0-50%</td><td>Two entities only; varies between runs</td></tr>
+<tr><td><code>teleport_iam_ic</code></td><td>100%</td><td class="warn">75%</td><td>Okta entity's config was located; judge rejected it as insufficiently specific</td></tr>
+</table>
+
+<h3>Where it gained most</h3>
+<table>
+<tr><th>SIA</th><th>Option G</th><th>Agentic</th></tr>
+<tr><td><code>portal_scale_to_zero</code></td><td>33%</td><td class="cost-ag">67%</td></tr>
+<tr><td><code>fedramp_egress_inspection</code></td><td>50%</td><td class="cost-ag">100%</td></tr>
+<tr><td><code>kiro_cli_vdi</code></td><td>50%</td><td class="cost-ag">100%</td></tr>
+<tr><td><code>container_image_sig</code></td><td>67%</td><td class="cost-ag">100%</td></tr>
+</table>
+
+<h2>Corpus: 20 SIAs, 18 tested</h2>
+<p style="font-size:13px">The corpus is 20 SIAs / 85 entities. Both G and H ran on 18 / 84. The two exclusions are properties of the corpus rather than of any retrieval method, so they apply identically to every option:</p>
+<table>
+<tr><th>SIA</th><th>Reason</th></tr>
+<tr><td><code>nitro_encryption</code></td><td>Entity extraction yields <strong>0 entities</strong> - the source SIA is an unfilled template with every field set to <code>-</code>. Nothing to retrieve.</td></tr>
+<tr><td><code>self_service_sso</code></td><td><strong>1 entity, and it is <code>sso-configuration</code> - the repository's own name.</strong> Filter 1 (self-match exclusion) rejects every candidate by construction.</td></tr>
+</table>
+<div class="warning"><strong>A validation-design flaw this exposed.</strong> Running the harness on <code>self_service_sso</code> anyway, the agent located <code>CODEOWNERS</code> - genuinely the file that governs SSO-config approvers, i.e. the correct answer - and all 8 matches were still scored noise. The self-match filter keys off the entity name rather than the term actually searched. Logged as a risk.</div>
+
+<h2>Harness defects found while building it</h2>
+<p style="font-size:13px">Each suppressed genuine findings, and each would have understated the method had it gone unnoticed:</p>
+<table>
+<tr><th>#</th><th>Defect</th><th>Effect</th></tr>
+<tr><td>1</td><td>Agent consumed its whole tool budget with no turn left to report</td><td>First run scored 0%</td></tr>
+<tr><td>2</td><td><code>cachePoint</code> markers accumulated once per turn, exceeding Anthropic's 4-block limit</td><td>Hard API failure</td></tr>
+<tr><td>3</td><td>Wrap-up reply capped at 1,500 tokens, truncating mid-JSON</td><td>Discarded valid findings from the two worst-regressing SIAs. Coverage read 83.3% before the fix, 86.9% after.</td></tr>
+</table>
+
+<h2>Still open</h2>
+<table>
+<tr><th>Item</th><th>Note</th></tr>
+<tr><td>Variance on low-entity SIAs</td><td>Test whether a retry pass on empty findings, or a larger tool budget, stabilises it</td></tr>
+<tr><td>Judge calibration</td><td>552 verdicts produced, none human-audited. The Okta rejection may be correct or over-strict</td></tr>
+<tr><td>Other models unmeasured</td><td>Only Sonnet 4.6 was run. Haiku figures elsewhere remain modelled, and Haiku's caching behaviour differs</td></tr>
+<tr><td>Prod account unverified</td><td>Quotas and model access confirmed in security-tools-dev only</td></tr>
+</table>
+
+<div class="ref"><strong>Sources:</strong> <code>results/results_test_h_agentic.json</code> (Phase 3), <code>results/results_test_g.json</code> (Option G baseline), <code>results/results_excluded_sias.json</code> (exclusion evidence), <code>scripts/agentic_eval.py</code> (harness). All figures re-derived from the raw JSON and verified.</div>
+</div>
+
+<div id="theme-toggle" style="position:fixed;top:12px;right:12px;z-index:999;display:flex;gap:4px;background:#161b22;border:1px solid #30363d;border-radius:20px;padding:4px;font-size:12px;cursor:pointer">
+<span id="t-dark" style="padding:4px 10px;border-radius:16px;background:#58a6ff;color:#0d1117">Dark</span>
+<span id="t-light" style="padding:4px 10px;border-radius:16px">Light</span>
+<span id="t-blue" style="padding:4px 10px;border-radius:16px">Blue</span>
+</div>
+<script>
+const themes = {
+  dark:  { bg:"#0d1117", card:"#161b22", border:"#30363d", text:"#c9d1d9", muted:"#8b949e", accent:"#58a6ff" },
+  light: { bg:"#ffffff", card:"#f6f8fa", border:"#d0d7de", text:"#1f2328", muted:"#656d76", accent:"#0969da" },
+  blue:  { bg:"#0a1628", card:"#0d2240", border:"#1c3a5e", text:"#d4e5f7", muted:"#8badc7", accent:"#4dabf7" }
+};
+function applyTheme(t) {
+  const c = themes[t];
+  document.body.style.background = c.bg;
+  document.body.style.color = c.text;
+  document.querySelectorAll("h1,h2,h3").forEach(e => e.style.color = c.accent);
+  document.querySelectorAll("a").forEach(e => { if(!e.closest("#theme-toggle")) e.style.color = c.accent; });
+  document.querySelectorAll("table th").forEach(e => { e.style.background = c.card; e.style.color = c.muted; e.style.borderColor = c.border; });
+  document.querySelectorAll("table td").forEach(e => e.style.borderBottomColor = c.border);
+  document.querySelectorAll("pre,code").forEach(e => { e.style.background = c.card; e.style.borderColor = c.border; });
+  document.querySelectorAll(".context,.highlight,.warning").forEach(e => { e.style.background = c.card; e.style.borderColor = c.border; });
+  document.querySelectorAll(".nav,.ref").forEach(e => e.style.color = c.muted);
+  const tg = document.getElementById("theme-toggle");
+  if(tg) { tg.style.background = c.card; tg.style.borderColor = c.border; }
+  document.querySelectorAll("#t-dark,#t-light,#t-blue").forEach(e => { e.style.background = "transparent"; e.style.color = c.muted; });
+  const a = document.getElementById("t-" + t);
+  if(a) { a.style.background = c.accent; a.style.color = t === "light" ? "#fff" : "#0d1117"; }
+  localStorage.setItem("sia-theme", t);
+}
+document.getElementById("t-dark").onclick = () => applyTheme("dark");
+document.getElementById("t-light").onclick = () => applyTheme("light");
+document.getElementById("t-blue").onclick = () => applyTheme("blue");
+applyTheme(localStorage.getItem("sia-theme") || "dark");
+</script>
+</body></html>

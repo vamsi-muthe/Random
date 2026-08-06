@@ -22,13 +22,13 @@ th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bott
 <h1>M1 Architecture Decision: KB vs Agentic Code Search</h1>
 <p class="subtitle">Agentic SIA Pipeline - Code Retrieval Strategy | 2026-08-04 | DRAFT</p>
 
-<div class="verdict">RECOMMENDATION: Agentic Search (Sonnet 4 + Prompt Caching)</div>
+<div class="verdict">VALIDATED: Agentic Search (Sonnet 4.6 + Prompt Caching) - 86.9% measured coverage</div>
 
 <div class="stat-grid">
 <div class="stat"><div class="num cost-kb">$2,083</div><div class="label">KB Monthly (M2)</div></div>
-<div class="stat"><div class="num cost-ag">$45</div><div class="label">Agentic Monthly (M2, cached)</div></div>
-<div class="stat"><div class="num" style="color:#d2a8ff">46x</div><div class="label">Cost Difference</div></div>
-<div class="stat"><div class="num" style="color:#f0883e">718</div><div class="label">SIAs/mo to Break Even</div></div>
+<div class="stat"><div class="num cost-ag">$75</div><div class="label">Agentic Monthly (M2) - measured</div></div>
+<div class="stat"><div class="num" style="color:#d2a8ff">27.8x</div><div class="label">Cost Difference</div></div>
+<div class="stat"><div class="num" style="color:#f0883e">1,313</div><div class="label">SIAs/mo to Break Even</div></div>
 </div>
 
 <h2>Pages</h2>
@@ -73,24 +73,48 @@ th{background:#161b22;color:#8b949e;text-align:left;padding:8px 12px;border-bott
 <p>Adjust sliders for SIAs/month, model choice, caching, repos. Live break-even chart and TCO projection.</p>
 </div>
 
+<div class="card" style="border-color:#238636">
+<a href="10-validation-results.html">10. Validation Results (Phase 3) - MEASURED</a>
+<p>The 20-SIA evaluation of the selected option. 86.9% coverage vs Option G's 73.8%, noise 47% to 16.3%. Also records three estimates that measurement contradicted.</p>
+</div>
+
 <div class="card">
 <a href="09-risk-sensitivity.html">9. Risk Assessment & Sensitivity Analysis</a>
 <p>What variables matter most? What-if scenarios for price drops, latency SLAs, scale spikes.</p>
 </div>
 
 <h2>Key Numbers (Quick Reference)</h2>
+<p style="font-size:12px;color:#8b949e">Agentic figures are <strong>measured</strong> from the Phase 3 run on 18 SIAs / 84 entities. KB and Option G remain modelled.</p>
 <table>
-<tr><th>Metric</th><th>Knowledge Base</th><th>Agentic (Sonnet 4)</th><th>Agentic (Sonnet 4 + Cache)</th></tr>
-<tr><td>Fixed monthly floor</td><td class="cost-kb">$700.80 (OpenSearch 4 OCU)</td><td class="cost-ag">$0</td><td class="cost-ag">$0</td></tr>
-<tr><td>Cost per SIA (12 entities)</td><td>$0.048</td><td>$2.70</td><td>~$0.90</td></tr>
-<tr><td>Monthly at M1 (20 SIAs)</td><td class="cost-kb">$1,903</td><td class="cost-ag">$54</td><td class="cost-ag">~$18</td></tr>
-<tr><td>Monthly at M2 (50 SIAs)</td><td class="cost-kb">$2,083</td><td class="cost-ag">$169</td><td class="cost-ag">~$45</td></tr>
-<tr><td>12-month TCO (M2)</td><td class="cost-kb">$24,996</td><td class="cost-ag">$2,025</td><td class="cost-ag">~$540</td></tr>
-<tr><td>Break-even</td><td colspan="3">718 SIAs/month (with maintenance) | 265 SIAs/month (infra only)</td></tr>
-<tr><td>Engineering hours/month</td><td class="cost-kb">16-24 hrs</td><td class="cost-ag" colspan="2">2-8 hrs</td></tr>
-<tr><td>Quality score (weighted)</td><td>3.10 / 5</td><td class="cost-ag" colspan="2">3.90 / 5</td></tr>
+<tr><th>Metric</th><th>Knowledge Base</th><th>Option G (KB+grep)</th><th>Agentic (Sonnet 4.6)</th></tr>
+<tr><td>Fixed monthly floor</td><td class="cost-kb">$700.80 (OpenSearch 4 OCU)</td><td class="cost-kb">$700.80</td><td class="cost-ag">$0</td></tr>
+<tr><td>Cost per entity</td><td>$0.004</td><td>$0.021</td><td class="cost-ag">$0.1002 measured</td></tr>
+<tr><td>Monthly at M1 (20 SIAs)</td><td class="cost-kb">$1,908</td><td>~$1,707</td><td class="cost-ag">$24</td></tr>
+<tr><td><strong>Monthly at M2 (50 SIAs)</strong></td><td class="cost-kb"><strong>$2,088</strong></td><td><strong>$1,892</strong></td><td class="cost-ag"><strong>$75</strong></td></tr>
+<tr><td>Monthly at M3 (100 SIAs)</td><td class="cost-kb">$2,622</td><td>~$2,433</td><td class="cost-ag">$150</td></tr>
+<tr><td>3-year TCO (M2)</td><td class="cost-kb">$75,168</td><td>$68,094</td><td class="cost-ag">$2,705</td></tr>
+<tr><td>Break-even vs agentic</td><td colspan="3">1,313 SIAs/month with maintenance | 487 infra-only. M2 target is 50.</td></tr>
+<tr><td>Engineering hours/month</td><td class="cost-kb">16-24 hrs</td><td>8-16 hrs</td><td class="cost-ag">2-8 hrs</td></tr>
+<tr><td><strong>Measured coverage</strong></td><td>n/a</td><td><strong>73.8%</strong></td><td class="cost-ag"><strong>86.9%</strong></td></tr>
+<tr><td><strong>Measured noise rate</strong></td><td>n/a</td><td><strong>47%</strong></td><td class="cost-ag"><strong>16.3%</strong></td></tr>
+<tr><td>Reproducible across runs</td><td>No (0-7 discrepancies)</td><td>No</td><td>No (0-50% on 2-entity SIAs)</td></tr>
+<tr><td>Quality score (judgment)</td><td>3.10 / 5</td><td>~3.5 / 5</td><td>3.90 / 5</td></tr>
 </table>
 
+<h2>Verified in security-tools-dev (658383024129)</h2>
+<table>
+<tr><th>Check</th><th>Result</th></tr>
+<tr><td>Sonnet 4.6 TPM quota</td><td class="cost-ag">6,000,000 - 4.8x headroom over 1.26M/SIA demand. <strong>No increase needed.</strong></td></tr>
+<tr><td>Opus 4.8 TPM quota</td><td>30,000,000</td></tr>
+<tr><td>Haiku 4.5 TPM quota</td><td>5,000,000</td></tr>
+<tr><td>Sonnet 4.6 prompt caching</td><td class="cost-ag">Works - 1,753 tokens written, read back on next call</td></tr>
+<tr><td>Haiku 4.5 prompt caching</td><td style="color:#d29922">Did not engage at 1,760-token prefix; minimum is larger than Sonnet's</td></tr>
+<tr><td>Opus 4.8 <code>temperature</code></td><td style="color:#d29922">Rejected - deprecated for this model. Synthesis passes no inferenceConfig, so not a live fault</td></tr>
+<tr><td>Claude Haiku 3.5</td><td class="cost-kb">End-of-life, returns ResourceNotFoundException. Was named as the fallback; replaced by Haiku 4.5</td></tr>
+<tr><td>Haiku 4.5 as a <em>cost</em> fallback</td><td class="cost-kb">Does not hold. At $1.00/$5.00 with caching not engaging, Haiku 4.5 is $0.133/entity against Sonnet 4.6 cached at $0.1002 - <strong>33% more expensive.</strong> It remains a <em>throughput</em> fallback via its separate 5M TPM pool.</td></tr>
+<tr><td>AgentCore runtime</td><td class="cost-ag"><code>agentic_sia_dev</code> READY</td></tr>
+</table>
+<p style="font-size:12px;color:#8b949e">Prod (568225419104) still needs the same check - quotas and model access are per-account.</p>
 
 <h2>Key Evidence (External)</h2>
 <table>

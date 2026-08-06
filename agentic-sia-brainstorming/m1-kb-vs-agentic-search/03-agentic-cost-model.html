@@ -71,7 +71,7 @@ Per SIA (15 entities): 1,470K input + 105K output = 1,575K tokens
 <tr><th>Model</th><th>Input $/1M</th><th>Output $/1M</th><th>12 entities</th><th>15 entities</th><th>20 entities</th></tr>
 <tr><td style="color:#58a6ff"><strong>Claude Sonnet 4</strong></td><td>$3.00</td><td>$15.00</td><td><strong>$4.79</strong></td><td>$5.99</td><td>$7.98</td></tr>
 <tr><td style="color:#d2a8ff">Claude Opus 4</td><td>$15.00</td><td>$75.00</td><td>$23.94</td><td>$29.93</td><td>$39.90</td></tr>
-<tr><td style="color:#3fb950">Claude Haiku 3.5</td><td>$0.80</td><td>$4.00</td><td><strong>$1.28</strong></td><td>$1.60</td><td>$2.13</td></tr>
+<tr><td style="color:#3fb950">Claude Haiku 4.5</td><td>$1.00</td><td>$5.00</td><td><strong>$1.60</strong></td><td>$2.00</td><td>$2.66</td></tr>
 <tr><td style="color:#f0883e">GPT-4o</td><td>$2.50</td><td>$10.00</td><td>$3.78</td><td>$4.73</td><td>$6.30</td></tr>
 <tr><td style="color:#79c0ff">GPT-4o-mini</td><td>$0.15</td><td>$0.60</td><td>$0.23</td><td>$0.28</td><td>$0.38</td></tr>
 <tr><td style="color:#56d364">Gemini 2.0 Flash</td><td>$0.10</td><td>$0.40</td><td>$0.15</td><td>$0.19</td><td>$0.25</td></tr>
@@ -84,7 +84,7 @@ Per SIA (15 entities): 1,470K input + 105K output = 1,575K tokens
 <tr><th>Model</th><th>Cache Discount</th><th>12 entities (cached)</th><th>Savings vs uncached</th></tr>
 <tr><td style="color:#58a6ff"><strong>Claude Sonnet 4</strong></td><td>90%</td><td class="cost-ag"><strong>~$1.60</strong></td><td>67% cheaper</td></tr>
 <tr><td style="color:#d2a8ff">Claude Opus 4</td><td>90%</td><td>~$7.98</td><td>67% cheaper</td></tr>
-<tr><td style="color:#3fb950">Claude Haiku 3.5</td><td>90%</td><td class="cost-ag"><strong>~$0.43</strong></td><td>67% cheaper</td></tr>
+<tr><td style="color:#3fb950">Claude Haiku 4.5</td><td>90% <em>in theory</em></td><td class="cost-kb"><strong>$1.60 uncached</strong></td><td>Caching did not engage at our prefix size - see note</td></tr>
 <tr><td style="color:#f0883e">GPT-4o</td><td>50%</td><td>~$2.27</td><td>40% cheaper</td></tr>
 <tr><td style="color:#79c0ff">GPT-4o-mini</td><td>50%</td><td>~$0.14</td><td>40% cheaper</td></tr>
 <tr><td style="color:#56d364">Gemini 2.0 Flash</td><td>75%</td><td>~$0.06</td><td>60% cheaper</td></tr>
@@ -141,3 +141,13 @@ applyTheme(localStorage.getItem("sia-theme") || "dark");
 </script>
 
 </body></html>
+
+<div style="background:#2d1117;border:1px solid #da3633;border-radius:6px;padding:12px 16px;margin:12px 0;font-size:13px;color:#f85149">
+<strong>Measured correction on Haiku 4.5.</strong> Two things invalidate the "cheap fallback" framing.
+Haiku 4.5 lists at <strong>$1.00 / $5.00</strong>, not the $0.80 / $4.00 of the end-of-life Haiku 3.5.
+And in testing, its prompt cache <strong>did not engage</strong> on a 1,760-token prefix where Sonnet 4.6's did,
+so it pays full input price. Net effect: <strong>$0.133 per entity against Sonnet 4.6's measured $0.1002</strong> -
+Haiku 4.5 is 33% <em>more</em> expensive. It stays in the design as a <strong>throughput</strong> fallback,
+drawing on a separate 5M TPM quota pool, not as a cost lever. If the prefix were grown past Haiku's
+cache minimum it would fall to ~$0.068 per entity, but that is unverified.
+</div>

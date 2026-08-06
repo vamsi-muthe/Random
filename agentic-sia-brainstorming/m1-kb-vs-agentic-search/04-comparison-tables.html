@@ -9,8 +9,8 @@
 
 <h2>4.1 All Scenarios, All Approaches</h2>
 <table>
-<tr><th>Scenario</th><th class="cost-kb">KB Total</th><th class="cost-ag">Sonnet 4</th><th class="cost-ag">Sonnet 4 (cached)</th><th>Haiku 3.5</th><th>Gemini Flash</th><th>KB vs Sonnet (cached)</th></tr>
-<tr><td><strong>M0</strong> (5 SIAs, 15 repos)</td><td class="cost-kb">$1,902</td><td>$23.94</td><td class="cost-ag">$7.98</td><td>$1.28</td><td>$0.15</td><td><strong>238x more expensive</strong></td></tr>
+<tr><th>Scenario</th><th class="cost-kb">KB Total</th><th class="cost-ag">Sonnet 4</th><th class="cost-ag">Sonnet 4 (cached)</th><th>Haiku 4.5</th><th>Gemini Flash</th><th>KB vs Sonnet (cached)</th></tr>
+<tr><td><strong>M0</strong> (5 SIAs, 15 repos)</td><td class="cost-kb">$1,902</td><td>$23.94</td><td class="cost-ag">$7.98</td><td>$1.60</td><td>$0.15</td><td><strong>238x more expensive</strong></td></tr>
 <tr><td><strong>M1</strong> (20 SIAs, 30 repos)</td><td class="cost-kb">$1,903</td><td>$95.76</td><td class="cost-ag">$31.92</td><td>$5.12</td><td>$0.60</td><td><strong>60x more expensive</strong></td></tr>
 <tr><td><strong>M2</strong> (50 SIAs, 80 repos)</td><td class="cost-kb">$2,083</td><td>$299.25</td><td class="cost-ag">$99.75</td><td>$16.00</td><td>$1.88</td><td><strong>21x more expensive</strong></td></tr>
 <tr><td><strong>M3</strong> (100 SIAs, 200 repos)</td><td class="cost-kb">$2,617</td><td>$598.50</td><td class="cost-ag">$199.50</td><td>$32.00</td><td>$3.75</td><td><strong>13x more expensive</strong></td></tr>
@@ -32,7 +32,7 @@ KB_variable = ~$0.05/SIA (negligible)
 <tr><th>Model</th><th>Cost/SIA (no cache)</th><th>Cost/SIA (cached)</th><th>Break-even (no cache)</th><th>Break-even (cached)</th><th>Feasible?</th></tr>
 <tr><td style="color:#58a6ff">Sonnet 4</td><td>$4.79</td><td>$1.60</td><td>402 SIAs/mo</td><td><strong>1,227 SIAs/mo</strong></td><td>Never (12x M3)</td></tr>
 <tr><td style="color:#d2a8ff">Opus 4</td><td>$23.94</td><td>$7.98</td><td>80 SIAs/mo</td><td>240 SIAs/mo</td><td>Marginal (no cache only)</td></tr>
-<tr><td style="color:#3fb950">Haiku 3.5</td><td>$1.28</td><td>$0.43</td><td>1,546 SIAs/mo</td><td><strong>5,005 SIAs/mo</strong></td><td>Never</td></tr>
+<tr><td style="color:#3fb950">Haiku 4.5</td><td>$1.60</td><td>n/a (cache does not engage)</td><td>1,240 SIAs/mo</td><td>n/a</td><td>Never</td></tr>
 <tr><td style="color:#f0883e">GPT-4o</td><td>$3.78</td><td>$2.27</td><td>510 SIAs/mo</td><td>857 SIAs/mo</td><td>Never</td></tr>
 <tr><td style="color:#56d364">Gemini Flash</td><td>$0.15</td><td>$0.06</td><td>19,020 SIAs/mo</td><td>~100K SIAs/mo</td><td>Impossible</td></tr>
 </table>
@@ -45,7 +45,7 @@ KB_variable = ~$0.05/SIA (negligible)
 <tr><td class="cost-kb">Knowledge Base (full)</td><td>$2,083</td><td class="cost-kb">$24,996</td><td>$74,988</td></tr>
 <tr><td>Agentic (Sonnet 4, no cache)</td><td>$299</td><td>$3,593</td><td>$10,779</td></tr>
 <tr><td class="cost-ag">Agentic (Sonnet 4, cached)</td><td>$100</td><td class="cost-ag">$1,197</td><td>$3,591</td></tr>
-<tr><td>Agentic (Haiku 3.5, cached)</td><td>$16</td><td>$192</td><td>$576</td></tr>
+<tr><td>Agentic (Haiku 4.5, uncached)</td><td>$100</td><td>$1,197</td><td>$3,591</td></tr>
 </table>
 
 <div class="ref"><strong>References:</strong> All costs derived from AWS Bedrock public pricing (us-east-1, Aug 2026). OpenSearch Serverless: $0.24/OCU-hr, 4 OCU minimum. Anthropic prompt caching: 0.10x read rate. Break-even formula accounts for KB variable cost of $0.05/SIA (embedding + rerank).</div>

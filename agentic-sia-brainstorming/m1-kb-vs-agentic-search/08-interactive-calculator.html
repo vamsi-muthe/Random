@@ -107,7 +107,7 @@ Total: <strong>6-10 tool calls per entity</strong> with growing context window. 
 <div class="model-selector" id="model-selector">
 <div class="model-chip active" data-model="sonnet4">Claude Sonnet 4 ($3/$15)</div>
 <div class="model-chip" data-model="opus4">Claude Opus 4 ($15/$75)</div>
-<div class="model-chip" data-model="haiku35">Claude Haiku 3.5 ($0.80/$4)</div>
+<div class="model-chip" data-model="haiku35">Claude Haiku 4.5 ($1/$5)</div>
 <div class="model-chip" data-model="gpt4o">GPT-4o ($2.50/$10)</div>
 <div class="model-chip" data-model="gpt4omini">GPT-4o-mini ($0.15/$0.60)</div>
 <div class="model-chip" data-model="flash">Gemini 2.0 Flash ($0.10/$0.40)</div>
@@ -300,7 +300,7 @@ applyTheme(localStorage.getItem("sia-theme") || "dark");
 const MODELS = {
   sonnet4:    { name: 'Claude Sonnet 4',    input: 3.00,  output: 15.00, color: '#58a6ff', cacheDiscount: 0.10 },
   opus4:      { name: 'Claude Opus 4',      input: 15.00, output: 75.00, color: '#d2a8ff', cacheDiscount: 0.10 },
-  haiku35:    { name: 'Claude Haiku 3.5',   input: 0.80,  output: 4.00,  color: '#3fb950', cacheDiscount: 0.10 },
+  haiku35:    { name: 'Claude Haiku 4.5',   input: 1.00,  output: 5.00,  color: '#3fb950', cacheDiscount: 1.00 },  // cache did not engage at our prefix size
   gpt4o:      { name: 'GPT-4o',             input: 2.50,  output: 10.00, color: '#f0883e', cacheDiscount: 0.50 },
   gpt4omini:  { name: 'GPT-4o-mini',        input: 0.15,  output: 0.60,  color: '#79c0ff', cacheDiscount: 0.50 },
   flash:      { name: 'Gemini 2.0 Flash',   input: 0.10,  output: 0.40,  color: '#56d364', cacheDiscount: 0.25 },

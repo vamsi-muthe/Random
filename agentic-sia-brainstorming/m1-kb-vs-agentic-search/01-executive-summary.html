@@ -15,11 +15,11 @@ pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px;o
 <h1>Executive Summary & Final Recommendation</h1>
 
 <div class="highlight">
-<strong>Recommendation:</strong> Use Agentic Search (Sonnet 4 + Prompt Caching) for M0-M2. Re-evaluate KB at M3 scale ONLY if latency SLAs demand sub-2s retrieval.
+<strong>Recommendation:</strong> Use Agentic Search (Sonnet 4.6 + Prompt Caching) for M0-M2. Re-evaluate KB at M3 scale ONLY if latency SLAs demand sub-2s retrieval.
 </div>
 
 <h2>The One-Paragraph Case</h2>
-<p>The OpenSearch Serverless minimum floor of <strong class="cost-kb">$691/month</strong> (4 OCU always-on) creates an insurmountable cost disadvantage at low-to-medium volumes. Even at M2 scale (50 SIAs/month), Agentic Search with Sonnet 4 costs <strong class="cost-ag">$45/month</strong> (with prompt caching) vs KB's <strong class="cost-kb">$2,083/month</strong> - a <strong>46x difference</strong>. The break-even point where KB becomes cheaper is approximately <strong>718 SIAs/month</strong> - 7x beyond the most aggressive enterprise projection. Agentic search also offers superior freshness (real-time code access), better cross-file coherence (can follow imports), and zero maintenance overhead.</p>
+<p>The OpenSearch Serverless minimum floor of <strong class="cost-kb">$700.80/month</strong> (4 OCU always-on) creates an insurmountable cost disadvantage at low-to-medium volumes. At M2 scale (50 SIAs/month), agentic search with Sonnet 4.6 costs <strong class="cost-ag">$75/month measured</strong> against KB's <strong class="cost-kb">$2,088/month</strong> - a <strong>27.8x difference</strong>. Break-even is <strong>1,313 SIAs/month</strong>, roughly 26x the M2 target. Agentic search also delivers better measured coverage (86.9% vs Option G's 73.8%), lower noise (16.3% vs 47%), real-time freshness, and cross-file tracing.</p>
 
 <h2>Decision Confidence: HIGH</h2>
 <table>
@@ -35,11 +35,11 @@ pre{background:#161b22;border:1px solid #30363d;border-radius:6px;padding:12px;o
 <h2>Recommended Architecture</h2>
 <table>
 <tr><th>Scale</th><th>Approach</th><th>Monthly Cost</th><th>Model</th></tr>
-<tr><td>M0 (5 SIAs, 15 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$1.25</td><td>Haiku 3.5</td></tr>
-<tr><td>M1 (20 SIAs, 30 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$18</td><td>Sonnet 4</td></tr>
-<tr><td>M2 (50 SIAs, 80 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$45</td><td>Sonnet 4</td></tr>
-<tr><td>M3 (100 SIAs, 200 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$90</td><td>Sonnet 4</td></tr>
-<tr><td>Burst (200 SIAs, audit wave)</td><td class="cost-ag">Agentic + Cache + Quota</td><td>$180</td><td>Sonnet 4</td></tr>
+<tr><td>M0 (5 SIAs, 15 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$6</td><td>Sonnet 4.6</td></tr>
+<tr><td>M1 (20 SIAs, 30 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$24</td><td>Sonnet 4.6</td></tr>
+<tr><td>M2 (50 SIAs, 80 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$75 measured</td><td>Sonnet 4.6</td></tr>
+<tr><td>M3 (100 SIAs, 200 repos)</td><td class="cost-ag">Agentic + Cache</td><td>$150</td><td>Sonnet 4.6</td></tr>
+<tr><td>Burst (200 SIAs, audit wave)</td><td class="cost-ag">Agentic + Cache + Quota</td><td>$401</td><td>Sonnet 4.6</td></tr>
 </table>
 
 <h2>What Would Change This Decision?</h2>
